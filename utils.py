@@ -2,6 +2,9 @@ import geopandas
 import rasterio
 from pathlib import Path
 
+from rasterio.warp import reproject, calculate_default_transform
+from rasterio.enums import Resampling
+
 
 def read_raster(filename):
     with rasterio.open(filename) as src:
@@ -9,6 +12,43 @@ def read_raster(filename):
 
     return data
 
+
+def reproject_raster(in_path, out_path, new_crs):
+    with rasterio.open(in_path) as src:
+        crs = rasterio.crs.CRS.from_string(new_crs)
+        transform, width, height = calculate_default_transform(
+            src.crs,
+            crs,
+            src.width,
+            src.height,
+            *src.bounds
+        )
+
+        kwargs = src.meta.copy()
+        kwargs.update({
+            'crs': crs,
+            'transform': transform,
+            'width': width,
+            'height': height
+        })
+
+        with rasterio.open(out_path, 'w', **kwargs) as dst:
+            reproject(
+                source=rasterio.band(src, 1),
+                destination=rasterio.band(dst, 1),
+                src_transform=rasterio.transform,
+                src_crs=rasterio.crs,
+                dst_transform=transform,
+                dst_crs=crs,
+                resampling=Resampling.nearest
+            )
+
+
+def compute_area(df, cartesian_system_crs='ESRI:102001'):
+    # Reproject in a cartesian system to compute area (squared km)
+    area = df.geometry.to_crs(cartesian_system_crs).geometry.area / 10 ** 6
+
+    return area
 
 def main():
     data_path = Path("data/")
