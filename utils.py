@@ -1,16 +1,39 @@
-import geopandas
 import rasterio
-from pathlib import Path
-
 from rasterio.warp import reproject, calculate_default_transform
 from rasterio.enums import Resampling
+from rasterstats import zonal_stats
 
 
-def read_raster(filename):
-    with rasterio.open(filename) as src:
+def zonal_stats_for_value(raster, vectors, value, stats, data_value, no_data_value, affine):
+    new_raster = raster.copy()
+    new_raster[new_raster == value] = data_value
+    new_raster[new_raster != data_value] = no_data_value
+
+    z_stats = [
+        s[stats] for s in
+        zonal_stats(
+            vectors=vectors,
+            raster=new_raster,
+            affine=affine,
+            stats=stats,
+            nodata=no_data_value
+        )
+    ]
+
+    return z_stats
+
+
+def read_raster(filename, crs):
+    reprojected_filename = filename.parent / f"{filename.stem}_reprojected.{filename.suffix}"
+    reproject_raster(filename, reprojected_filename, new_crs=crs)
+
+    with rasterio.open(reprojected_filename) as src:
+        no_data_value = src.nodata
+        affine = src.transform
+
         data = src.read(1)
 
-    return data
+    return data, affine, no_data_value
 
 
 def reproject_raster(in_path, out_path, new_crs):
@@ -49,17 +72,3 @@ def compute_area(df, cartesian_system_crs='ESRI:102001'):
     area = df.geometry.to_crs(cartesian_system_crs).geometry.area / 10 ** 6
 
     return area
-
-def main():
-    data_path = Path("data/")
-
-    data_2011_2040 = read_raster(filename=data_path / "rasters" / "arcp8510000532011-2040.asc")
-    data_2041_2070 = read_raster(filename=data_path / "rasters" / "arcp8510000532041-2070.asc")
-    data_2071_2100 = read_raster(filename=data_path / "rasters" / "arcp8510000532071-2100.asc")
-
-    boundaries = geopandas.read_file(data_path / "lcar000b21a_e.shp")
-    boundaries.plot()
-
-
-if __name__ == '__main__':
-    main()
