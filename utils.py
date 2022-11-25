@@ -4,13 +4,22 @@ from rasterio.enums import Resampling
 from rasterstats import zonal_stats
 
 
-def zonal_stats_for_value(raster, vectors, value, stats, data_value, no_data_value, affine):
+def zonal_stats_for_value(
+        raster,
+        vectors,
+        value,
+        data_value,
+        no_data_value,
+        affine,
+        stats="count",
+        resolution=1
+):
     new_raster = raster.copy()
     new_raster[new_raster == value] = data_value
     new_raster[new_raster != data_value] = no_data_value
 
     z_stats = [
-        s[stats] for s in
+        s[stats] * resolution ** 2 for s in
         zonal_stats(
             vectors=vectors,
             raster=new_raster,
