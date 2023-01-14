@@ -155,4 +155,4 @@ def zonal_stats_intersection(
         stats=stats
     )]
 
-    return z_stats
+    return z_stats, new_raster

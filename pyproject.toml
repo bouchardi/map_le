@@ -16,6 +16,8 @@ pygeos = "^0.13"
 mapclassify = "^2.4.3"
 folium = "^0.13.0"
 rasterstats = "^0.17.0"
+plotly = "^5.11.0"
+pandoc = "^2.3"
 
 [tool.poetry.dev-dependencies]
 
