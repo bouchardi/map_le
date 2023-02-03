@@ -156,3 +156,29 @@ def zonal_stats_intersection(
     )]
 
     return z_stats, new_raster
+
+
+def zonal_stats_intersection_gain(
+        vectors,
+        raster1,
+        raster2,
+        affine,
+        data_values,
+        stats="count",
+        nodata_value=-999,
+        resolution=1
+):
+    new_raster = np.ones(raster1.shape) * nodata_value
+    for data_value in data_values:
+        new_raster[np.where((raster1 <= data_value) & (raster2 == data_value))] = 1
+
+    z_stats = [
+        s[stats] * resolution ** 2 for s in zonal_stats(
+        vectors=vectors,
+        raster=new_raster,
+        affine=affine,
+        nodata=nodata_value,
+        stats=stats
+    )]
+
+    return z_stats, new_raster
