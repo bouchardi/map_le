@@ -1,12 +1,10 @@
 import numpy as np
 
-from rasterio.transform import Affine
 from rasterio.windows import Window
 import rasterio
 from rasterio.warp import reproject, calculate_default_transform
 from rasterio.enums import Resampling
 from rasterstats import zonal_stats
-from shapely.geometry import box
 
 
 def zonal_stats_for_value(
@@ -84,34 +82,9 @@ def compute_area(df, cartesian_system_crs='ESRI:102001'):
     return area
 
 
-def register_rasters(raster1, raster2, raster3):
-    resolution = raster1.res[0]
-    assert raster1.res[0] == raster1.res[1]
-    assert raster1.res == raster2.res == raster3.res
+def register_raster(raster, intersection):
+    resolution = raster.res[0]
 
-    box1 = box(*raster1.bounds)
-    box2 = box(*raster2.bounds)
-    box3 = box(*raster3.bounds)
-
-    intersection = box1.intersection(box2).intersection(box3)
-
-    transform = Affine(
-        resolution,
-        0.0,
-        intersection.bounds[0],
-        0.0,
-        -resolution,
-        intersection.bounds[3]
-    )
-
-    raster1 = _register_raster(raster1, intersection, resolution)
-    raster2 = _register_raster(raster2, intersection, resolution)
-    raster3 = _register_raster(raster3, intersection, resolution)
-
-    return (raster1, raster2, raster3), transform
-
-
-def _register_raster(raster, intersection, resolution):
     xmin, ymin, xmax, ymax = raster.bounds
 
     x0 = intersection.bounds[0] + resolution / 2
