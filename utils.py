@@ -1,7 +1,9 @@
 import numpy as np
 
+import geopandas
 from rasterio.windows import Window
 import rasterio
+from rasterio.features import shapes
 from rasterio.warp import reproject, calculate_default_transform
 from rasterio.enums import Resampling
 from rasterstats import zonal_stats
@@ -116,8 +118,10 @@ def zonal_stats_intersection(
         resolution=1
 ):
     new_raster = np.ones(raster1.shape) * nodata_value
-    for data_value in data_values:
-        new_raster[np.where((raster1 == data_value) & (raster2 == data_value))] = 1
+    new_raster[np.where(
+        (np.isin(raster1,  data_values)) &
+        (np.isin(raster2, data_values)))
+    ] = 1
 
     z_stats = [
         s[stats] * resolution ** 2 for s in zonal_stats(
@@ -142,16 +146,35 @@ def zonal_stats_intersection_gain(
         resolution=1
 ):
     new_raster = np.ones(raster1.shape) * nodata_value
-    for data_value in data_values:
-        new_raster[np.where((raster1 <= data_value) & (raster2 == data_value))] = 1
+    new_raster[np.where(
+        (np.invert(np.isin(raster1, data_values))) &
+        (np.isin(raster2, data_values)))
+    ] = 1
 
     z_stats = [
         s[stats] * resolution ** 2 for s in zonal_stats(
-        vectors=vectors,
-        raster=new_raster,
-        affine=affine,
-        nodata=nodata_value,
-        stats=stats
-    )]
+            vectors=vectors,
+            raster=new_raster,
+            affine=affine,
+            nodata=nodata_value,
+            stats=stats
+        )
+    ]
 
     return z_stats, new_raster
+
+
+def raster_to_vector(filename):
+    mask = None
+    with rasterio.open(filename) as src:
+        raster = src.read(1)
+        results = [
+            {'properties': {'raster_val': v}, 'geometry': s}
+            for i, (s, v) in enumerate(
+                shapes(raster.astype(np.float32), mask=mask, transform=src.transform)
+            )
+        ]
+
+    gdf = geopandas.GeoDataFrame.from_features(results)
+
+    return gdf
