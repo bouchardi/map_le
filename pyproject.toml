@@ -18,6 +18,7 @@ folium = "^0.13.0"
 rasterstats = "^0.17.0"
 plotly = "^5.11.0"
 pandoc = "^2.3"
+itables = "^1.4.6"
 
 [tool.poetry.dev-dependencies]
 
