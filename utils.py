@@ -164,9 +164,12 @@ def zonal_stats_intersection_gain(
     return z_stats, new_raster
 
 
-def raster_to_vector(filename):
+def raster_to_vector(filename, crs):
+    reprojected_filename = filename.parent / f"{filename.stem}_reprojected{filename.suffix}"
+    reproject_raster(filename, reprojected_filename, new_crs=crs)
+
     mask = None
-    with rasterio.open(filename) as src:
+    with rasterio.open(reprojected_filename) as src:
         raster = src.read(1)
         results = [
             {'properties': {'raster_val': v}, 'geometry': s}
